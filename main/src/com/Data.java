@@ -11,6 +11,8 @@ public class Data {
     public Data(String numRA, String description) {
         this.numRA = numRA;
         this.description = description.toUpperCase();
+        this.words = new ArrayList<>();
+        this.makeWords();
     }
 
     public String getNumRA() {
@@ -21,8 +23,40 @@ public class Data {
         return description;
     }
 
-    public void setWords(ArrayList<String> words) {
-        this.words = words;
+    private void makeWords() {
+
+        this.words.add("");
+
+        for (int i=0; i<this.description.length(); i++) {
+
+            if (this.description.charAt(i) != ' ') {
+
+                int maxIndex = (this.words.size() - 1);
+
+                this.words.set(maxIndex, this.words.get(maxIndex) + this.description.charAt(i));
+
+            } else {
+
+                this.words.add("");
+
+            }
+
+        }
+
+        int countRemoved = 0;
+
+        for (int i=0; i<words.size(); i++) {
+
+            if (words.get(i).length() <= 2) {
+
+                words.remove(i);
+                countRemoved++;
+                i -= countRemoved;
+
+            }
+
+        }
+
     }
 
     public ArrayList<String> getWords() {

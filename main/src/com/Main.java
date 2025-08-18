@@ -1,121 +1,302 @@
 package com;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
 
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Escolha a operação: ");
+        System.out.println("1. Popular dados");
+        System.out.println("2. Busca");
+
+        int choice = scanner.nextInt();
+
+        if (choice == 1) {
+
+            populateData();
+
+        } else if (choice == 2) {
+
+            System.out.println("Descrição a ser buscada: ");
+
+            scanner.nextLine();
+            String stringSearch = scanner.nextLine();
+
+            search(stringSearch);
+
+        }
+
+        scanner.close();
+
+    }
+
+    public static Characteristic[] getCharacteristics() {
+
+        Characteristic[] characteristics = {
+                new Characteristic("ESTOQUE"),
+                new Characteristic("PEDIDO_VENDA"),
+                new Characteristic("FATURAMENTO")
+        };
+
+        // ESTOQUE
+        characteristics[0].addWord("BAIXA");
+        characteristics[0].addWord("DIVERGENCIA");
+        characteristics[0].addWord("ERRADO");
+        characteristics[0].addWord("ESTO7");
+        characteristics[0].addWord("ESTOQUE");
+        characteristics[0].addWord("FUTURO");
+        characteristics[0].addWord("IDENTIFICACAO");
+        characteristics[0].addWord("LOCAL");
+        characteristics[0].addWord("LOCALIZACAO");
+        characteristics[0].addWord("NEGATIVO");
+        characteristics[0].addWord("PRODUTO");
+        characteristics[0].addWord("RESERVA");
+        characteristics[0].addWord("RESERVADO");
+        characteristics[0].addWord("ROTULO");
+        characteristics[0].addWord("REQUISICAO");
+        characteristics[0].addWord("INFORMADA");
+        characteristics[0].addWord("GERADA");
+
+        // PEDIDO_VENDA
+        characteristics[1].addWord("CONFIRMACAO");
+        characteristics[1].addWord("CONFIRMAR");
+        characteristics[1].addWord("PEDI1");
+        characteristics[1].addWord("PEDIDO");
+        characteristics[1].addWord("VENDA");
+
+        // FATURAMENTO
+        characteristics[2].addWord("CONFIRMAR");
+        characteristics[2].addWord("EMISSAO");
+        characteristics[2].addWord("FATU2");
+        characteristics[2].addWord("FATURAR");
+        characteristics[2].addWord("FISCAL");
+        characteristics[2].addWord("NF");
+        characteristics[2].addWord("NFS");
+        characteristics[2].addWord("NOTA");
+        characteristics[2].addWord("SAIDA");
+
+        return characteristics;
+
+    }
+
+    public static Data[] getData() {
+
         Data[] data = {
-                new Data("220707019", "ERRO ESTOQUE DE AVULSO - APARECERAM PARES DO NADA NOS AVULSOS/DISPONIVEL"),
-                new Data("220310004", "ERRO AO TENTAR ATIVAR PEDIDO ESTOQUE FUTURO COM ENTREGA CANCELADA"),
-                new Data("220330004", "ERRO AO CONFIRMAR PEDIDO DE VENDA DE ESTOQUE FUTURO")
+                new Data("1", "DIVERGENCIA NO ESTOQUE"),
+                new Data("2", "ERRO AO CONFIRMAR PEDIDO DE VENDA DE ESTOQUE FUTURO"),
+                new Data("3", "ERRO ESTOQUE INSERTOS PRODUZIDOS E QUE NÃO APARECEM NO RESERVADO Ticket 93950"),
+                new Data("4", "ESTOQUE DO ITEM 6903 NO LOCAL 06"),
+                new Data("5", "ERRO ESTOQUE FUTURO TICKET 135171"),
+                new Data("6", "pedi1 - pedido de venda "),
+                new Data("7", "Ticket 194602 - Erro ao Confirmar o Pedido de Venda"),
+                new Data("8", "Erro de estoque ao confirmar Pedido de Venda"),
+                new Data("9", "ERRO AO FAZER PEDIDO DE VENDA URGENTE"),
+                new Data("10", "Erro ao abrir o programa pedido de venda "),
+                new Data("11", "ERRO AO EMITIR NOTA FISCAL"),
+                new Data("12", "erro estoque nota fiscal")
         };
 
-        for (int i=0; i<data.length; i++) {
+        return data;
 
-            data[i].setWords(getWordsFromString(data[i].getDescription()));
+    }
 
-            /*System.out.println("---- RA ----");
+    public static void populateData() {
 
-            for (int j=0; j<data[i].getWords().size(); j++) {
-                System.out.println(data[i].getWords().get(j));
-            }*/
+        Characteristic[] characteristics = getCharacteristics();
+
+        Data[] ra = getData();
+
+        StringBuilder info = new StringBuilder();
+
+        for (int i=0; i<ra.length; i++) {
+
+            Similarity similarity = new Similarity(characteristics, ra[i]);
+            similarity.calculateVectors();
+
+            info.append(ra[i].getNumRA());
+
+            for (int j=0; j<similarity.getVectors().length; j++) {
+
+                info.append(",").append(similarity.getVectors()[j]);
+
+            }
+
+            info.append(",\n");
 
         }
 
-        Data[] dataSearch = {
-                new Data("000", "Erro de estoque estoque futuro ativa")
-        };
+        populateArchive(info);
 
-        dataSearch[0].setWords(getWordsFromString(dataSearch[0].getDescription()));
+    }
 
-        /*System.out.println("---- SEARCH ----");
+    public static void populateArchive(StringBuilder info) {
 
-        for (int i=0; i<dataSearch[0].getWords().size(); i++) {
-            System.out.println(dataSearch[0].getWords().get(i));
-        }*/
+        try {
 
-        System.out.println("---- SIMILARITY ----");
+            FileWriter file = new FileWriter("./data.txt");
+            file.write(info.toString());
+            file.close();
 
-        for (int i=0; i<data.length; i++) {
-            double similarity = calculateSimilarity(data[i], dataSearch[0].getWords());
-            System.out.println("RA: " + data[i].getNumRA() + " Score: " + similarity);
+        } catch (IOException e) {
+
+            System.out.println("Erro no arquivo: " + e);
+
         }
 
     }
 
-    public static ArrayList<String> getWordsFromString(String string) {
+    public static void search(String stringSearch) {
 
-        ArrayList<String> words = new ArrayList<>();
-        words.add(""); // Para iniciar com uma palavra
+        String raFirstScore = "";
+        String raSecondScore = "";
+        String raThirdScore = "";
+        double firstScore;
+        double secondScore;
+        double thirdScore;
 
-        for (int i=0; i<string.length(); i++) {
+        Characteristic[] characteristics = getCharacteristics();
 
-            if (string.charAt(i) != ' ') { // Espaço
-                int index = (words.size() - 1);
-                words.set(index, words.get(index) + string.charAt(i));
-            } else {
-                words.add("");
-            }
+        Data dataSearch = new Data("X", stringSearch);
 
-        }
+        Similarity similarity = new Similarity(characteristics, dataSearch);
+        similarity.calculateVectors();
 
-        ArrayList<Integer> indexesDelete = new ArrayList<>();
+        ArrayList<DataRa> allData = new ArrayList<>();
 
-        for (int i=0; i<words.size(); i++) {
+        try {
 
-            if (words.get(i).length() <= 2 && notContainsNumbers(words.get(i))) {
-                indexesDelete.add(i);
-            }
+            File file = new File("./data.txt");
+            Scanner reader = new Scanner(file);
 
-        }
+            while (reader.hasNextLine()) {
 
-        int deleted = 0;
+                DataRa dataRa = new DataRa();
 
-        for (int i=0; i<indexesDelete.size(); i++) {
+                String dataLine = reader.nextLine();
 
-            words.remove((indexesDelete.get(i) - deleted));
-            deleted++;
+                boolean foundNumRa = false;
+                String doublePlaceHolder = "";
 
-        }
+                for (int i=0; i<dataLine.length(); i++) {
 
-        return words;
+                    if (!foundNumRa && dataLine.charAt(i) != ',') {
+                        dataRa.setNumRa(dataRa.getNumRa() + dataLine.charAt(i));
+                    } else if (!foundNumRa) {
+                        foundNumRa = true;
+                    } else if (dataLine.charAt(i) != ',') {
+                        doublePlaceHolder += dataLine.charAt(i);
+                    } else {
+                        dataRa.addVector(Double.parseDouble(doublePlaceHolder));
+                        doublePlaceHolder = "";
+                    }
 
-    }
-
-    public static double calculateSimilarity(Data data, ArrayList<String> wordsSearch) {
-
-        int countWordsLike = 0;
-
-        for (int i=0; i<wordsSearch.size(); i++) {
-
-            for (int j=0; j<data.getWords().size(); j++) {
-
-                if (data.getWords().get(j).contains(wordsSearch.get(i))) {
-                    countWordsLike++;
-                    break;
                 }
 
+                allData.add(dataRa);
+
+            }
+
+            reader.close();
+
+        } catch (Exception e) {
+
+            System.out.println("Erro ao abrir o arquivo: " + e);
+
+        }
+
+        DataRa[] differences = new DataRa[allData.size()];
+
+        for (int i=0; i<differences.length; i++) {
+            differences[i] = new DataRa();
+        }
+
+        for (int i=0; i<differences.length; i++) {
+
+            differences[i].setNumRa(allData.get(i).getNumRa());
+
+            for (int j=0; j<allData.get(i).getVectors().size(); j++) {
+
+                double calculation = allData.get(i).getVectors().get(j) - similarity.getVectors()[j];
+
+                if (calculation < 0) {
+                    calculation *= -1;
+                }
+
+                differences[i].addVector(calculation);
+
             }
 
         }
 
-        return Math.round(((double) countWordsLike / wordsSearch.size()) * 100);
+        raFirstScore = differences[0].getNumRa();
+        raSecondScore = differences[0].getNumRa();
+        raThirdScore = differences[0].getNumRa();
 
-    }
+        double sumFirstVectors = 0;
 
-    public static boolean notContainsNumbers(String string) {
+        for (int j=0; j<differences[0].getVectors().size(); j++) {
+            sumFirstVectors += differences[0].getVectors().get(j);
+        }
 
-        for (int i=0; i<string.length(); i++) {
+        firstScore = sumFirstVectors;
+        secondScore = sumFirstVectors;
+        thirdScore = sumFirstVectors;
 
-            switch (string.charAt(i)) {
-                case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': return false;
+        for (int i=1; i<differences.length; i++) {
+
+            double sumVectors = 0;
+
+            for (int j=0; j<differences[i].getVectors().size(); j++) {
+                sumVectors += differences[i].getVectors().get(j);
+            }
+
+            if (firstScore > sumVectors) {
+
+                thirdScore = secondScore;
+                raThirdScore = raSecondScore;
+
+                secondScore = firstScore;
+                raSecondScore = raFirstScore;
+
+                firstScore = sumVectors;
+                raFirstScore = differences[i].getNumRa();
+
+            } else if (secondScore > sumVectors) {
+
+                thirdScore = secondScore;
+                raThirdScore = raSecondScore;
+
+                secondScore = sumVectors;
+                raSecondScore = differences[i].getNumRa();
+
+            } else if (thirdScore > sumVectors) {
+
+                thirdScore = sumVectors;
+                raThirdScore = differences[i].getNumRa();
+
             }
 
         }
 
-        return true;
+        firstScore = 100 - firstScore;
+        secondScore = 100 - secondScore;
+        thirdScore = 100 - thirdScore;
+
+        System.out.println("---- COLOCAÇÕES ----");
+        System.out.println("1 RA: " + raFirstScore);
+        System.out.println("1 Score: " + firstScore);
+        System.out.println("2 RA: " + raSecondScore);
+        System.out.println("2 Score: " + secondScore);
+        System.out.println("3 RA: " + raThirdScore);
+        System.out.println("3 Score: " + thirdScore);
+
     }
 
 }
